@@ -131,3 +131,12 @@ These rules are extracted from real review feedback by the core team (patimen, D
 ## Python / MLNode
 
 - In FastAPI code, use **FastAPI `Security` / dependency injection** for auth checks rather than manually calling auth functions in each handler — centralizes auth logic and prevents missed endpoints
+
+## Proto Generation & Ignite
+
+- **Use Ignite CLI to generate proto files** — do NOT manually regenerate with `protoc` or other tools
+- Run `ignite generate proto-go` from the `inference-chain` directory whenever you modify `.proto` files
+- **Current Ignite version: 28.10.0** — do not upgrade without explicit approval
+- For new messages, **use Ignite scaffolding** instead of manual creation — see `dev_notes/ignite_cheat_sheet.md`
+- When scaffolding new messages, always specify the correct module (e.g., `--module inference`)
+- Do not use newer gRPC-Go versions than what the project currently uses — Ignite manages this dependency
