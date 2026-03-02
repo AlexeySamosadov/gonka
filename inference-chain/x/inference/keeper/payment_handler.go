@@ -59,7 +59,6 @@ func (k *Keeper) PayParticipantFromModule(ctx context.Context, address string, a
 		return nil
 	}
 
-	vestingEpochs := vestingPeriods
 	k.LogInfo("Paying participant", types.Payments, "participant", participantAddress, "amount", amount, "address", address, "module", moduleName, "vestingPeriods", vestingPeriods)
 
 	if vestingPeriods != nil && *vestingPeriods > 0 {
@@ -68,10 +67,12 @@ func (k *Keeper) PayParticipantFromModule(ctx context.Context, address string, a
 		if err != nil {
 			return err
 		}
-		// Vesting keeper should move funds and create vesting schedule
-		err = k.GetStreamVestingKeeper().AddVestedRewards(ctx, address, moduleName, vestingAmount, vestingEpochs, memo+"_vested")
+		// Must forward moduleName (not types.ModuleName) — streamvesting debits the
+		// fundingModule account directly. Hardcoding here would silently drain
+		// inference escrow for non-inference callers (e.g. top_reward payouts).
+		err = k.GetStreamVestingKeeper().AddVestedRewards(ctx, address, moduleName, vestingAmount, vestingPeriods, memo+"_vested")
 		if err != nil {
-			k.LogError("Error adding vested payment", types.Payments, "error", err, "amount", vestingAmount)
+			k.LogError("Error adding vested payment", types.Payments, "error", err, "amount", vestingAmount, "module", moduleName)
 			return err
 		}
 	} else {
@@ -82,7 +83,7 @@ func (k *Keeper) PayParticipantFromModule(ctx context.Context, address string, a
 		}
 		return k.BankKeeper.SendCoinsFromModuleToAccount(ctx, moduleName, participantAddress, coins, memo)
 	}
-	return err
+	return nil
 }
 
 func (k *Keeper) BurnModuleCoins(ctx context.Context, burnCoins int64, memo string) error {
